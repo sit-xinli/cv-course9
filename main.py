@@ -1,7 +1,6 @@
-# Import required modules
+# 必要なモジュールをインポートする
 import cv2
 import numpy as np
-import os
 import glob
 
 
