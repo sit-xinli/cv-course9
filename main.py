@@ -84,14 +84,14 @@ ret, matrix, distortion, r_vecs, t_vecs = cv2.calibrateCamera(
     threedpoints, twodpoints, grayColor.shape[::-1], None, None)
 
 # 必要な出力を表示する
-print(" カメラ行列：")
+print(" カメラ内部パラメタ：")
 print(matrix)
 
-print("\n 変形パラメタ:")
+print("\n カメラ変形係数:")
 print(distortion)
 
-print("\n 回転パラメタ:")
+print("\n 外部変換--回転:")
 print(r_vecs)
 
-print("\n 並進パラメタ:")
+print("\n 外部変換--並進:")
 print(t_vecs)
