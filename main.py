@@ -9,66 +9,64 @@ import glob
 CHECKERBOARD = (7, 7)
 
 
-# stop the iteration when specified
-# accuracy, epsilon, is reached or
-# specified number of iterations are completed.
+# 指定された
+# 精度εに達するか、または
+# 指定された回数の反復が終了した時.
 criteria = (cv2.TERM_CRITERIA_EPS + 
             cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 
-# Vector for 3D points
+# 3次元点のベクトル
 threedpoints = []
 
-# Vector for 2D points
+# 2次元点のベクトル
 twodpoints = []
 
 
-#  3D points real world coordinates
+#  3Dポイント実世界座標
 objectp3d = np.zeros((1, CHECKERBOARD[0] 
                       * CHECKERBOARD[1], 
                       3), np.float32)
+# 3Dポイントの座標を設定：z座標は0, x座標とy座標はチェッカーボードのグリッドに基づく
+# 単位は通常はミリメートルやセンチメートルだが、最後でピクセル単位になるのでここでどうでもいい
 objectp3d[0, :, :2] = np.mgrid[0:CHECKERBOARD[0],
                                0:CHECKERBOARD[1]].T.reshape(-1, 2)
 prev_img_shape = None
 
 
-# Extracting path of individual image stored
-# in a given directory. Since no path is
-# specified, it will take current directory
-# jpg files alone
+# 指定されたディレクトリに格納されている個々の画像のパスを抽出する
+# パスを抽出する。 
 images = glob.glob('data/*.png')
 
 for filename in images:
     image = cv2.imread(filename)
-    #resize the image to 640x480
+    #元画像が4032×3024大きすぎるため、リサイズして処理を軽くする
     image = cv2.resize(image, ((int)(image.shape[1]/4), (int)(image.shape[0]/4)))
-    #from color to gray, and resize to 640x480
+    #計算はカラーに関係ないため、カラーからグレー画像へ
     grayColor = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
 
-    # Find the chess board corners
-    # If desired number of corners are
-    # found in the image then ret = true
+    # チェス盤の角を見つける
+    # 希望する角の数が見つかった場合 ret = true
     ret, corners = cv2.findChessboardCorners(
                     grayColor, CHECKERBOARD, 
                     cv2.CALIB_CB_ADAPTIVE_THRESH 
                     + cv2.CALIB_CB_FAST_CHECK + 
                     cv2.CALIB_CB_NORMALIZE_IMAGE)
 
-    # If desired number of corners can be detected then,
-    # refine the pixel coordinates and display
-    # them on the images of checker board
+    # 希望する数のコーナーが検出された場合、
+    # ピクセル座標を絞り込んで表示する
+    # チェッカーボードの画像に表示する。
     if ret == True:
         threedpoints.append(objectp3d)
 
-        # Refining pixel coordinates
-        # for given 2d points.
+        # コーナー検出、ピクセル座標の精度を上げるため、サブピクセル精度.
         corners2 = cv2.cornerSubPix(
             grayColor, corners, (11, 11), (-1, -1), criteria)
 
         twodpoints.append(corners2)
 
-        # Draw and display the corners
+        # コーナーを描いて表示する
         image = cv2.drawChessboardCorners(image, 
                                           CHECKERBOARD, 
                                           corners2, ret)
@@ -78,24 +76,23 @@ for filename in images:
 
 cv2.destroyAllWindows()
 
-
-# Perform camera calibration by 
-# passing the value of above found out 3D points (threedpoints)
-# and its corresponding pixel coordinates of the
-# detected corners (twodpoints)
+# ３D座標とそれに対応する検出されたコーナー点をつかい、
+# カメラキャリブレーションを実行する。 
+# 複数画像のK行列が同じく手、[R |t]だけ違うので、複数画像があれば
+# より精度の高いキャリブレーションができる。
+# 今回は5枚の画像を使う。
 ret, matrix, distortion, r_vecs, t_vecs = cv2.calibrateCamera(
     threedpoints, twodpoints, grayColor.shape[::-1], None, None)
 
-
-# Displaying required output
-print(" Camera matrix:")
+# 必要な出力を表示する
+print(" カメラ行列：")
 print(matrix)
 
-print("\n Distortion coefficient:")
+print("\n 変形パラメタ:")
 print(distortion)
 
-print("\n Rotation Vectors:")
+print("\n 回転パラメタ:")
 print(r_vecs)
 
-print("\n Translation Vectors:")
+print("\n 並進パラメタ:")
 print(t_vecs)
